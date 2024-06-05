@@ -13,9 +13,8 @@ https://www.entrypointai.com/blog/pre-training-vs-fine-tuning-vs-in-context-lear
 
 ##### A. L'architecture Transformer
 
-
-- Papier original **'Attention Is All You Need'** : https://arxiv.org/abs/1706.03762
-- Explication illustrée et très détaillée : http://jalammar.github.io/illustrated-transformer/ 
+- [Papier original **'Attention Is All You Need'**](https://arxiv.org/abs/1706.03762)
+- [Explication illustrée et très détaillée](http://jalammar.github.io/illustrated-transformer/)
 
 ##### B. Encoder-only, encoder-decoder, decoder-only
 
@@ -40,8 +39,8 @@ Le principal inconvénient architectural des Transformers est leur complexité q
 **Jamba** est une nouvelle architecture hybride, à mi-chemin entre le Transformer et Mamba. Cela semble permettre un niveau de performance élevé, une gestion des contextes très longs, un temps d'inférence nettement plus court, et des exigences mémoires bien moindres.
 
 Liens des papiers originaux : 
-- Mamba : https://arxiv.org/abs/2312.00752 
-- Jamba : https://arxiv.org/abs/2403.19887 
+- [Mamba](https://arxiv.org/abs/2312.00752) 
+- [Jamba](https://arxiv.org/abs/2403.19887) 
 
 #### 3. Méthodes de fine-tuning
 
@@ -49,7 +48,7 @@ Liens des papiers originaux :
 
 ###### a. Fine-tuning complet
 
-Implémentation HuggingFace : https://huggingface.co/docs/transformers/training
+- [Implémentation HuggingFace](https://huggingface.co/docs/transformers/training)
 
 ###### b. Fine-tuning efficace (PEFT) : LoRA, QLoRA, DoRA, etc.
 
@@ -57,32 +56,32 @@ PEFT = Parameter-Efficient Fine-Tuning | LoRA = Low-Rank Adaptation | QLoRA = Qu
 
 Ré-entraîner entièrement un LLM est très coûteux en termes d'infrastructure et de données, et n'est donc pas à la portée de n'importe quelle organisation. Des méthodes « efficaces » ont été créées pour rendre le fine-tuning facilement accessible, dont la plus connue et la plus populaire est LoRA (pour Low-Rank Adaptation). Son fonctionnement repose sur deux éléments : 
 
-- **L'adaptation** : Les poids du modèle pré-entraîné sont gelés pendant l'entraînement. Ce sont des poids supplémentaires (ceux de l'adapteur) qui vont être entraînés. Cela permet de garder l'entièreté du modèle pré-entraîné tel quel, et de rajouter uniquement la partie spécifique à chaque tâche. Entre autres, il est ainsi possible, avec un seul modèle de base, d'héberger plusieurs modèles spécialisés à moindre coût. Le papier LoRA Land (https://arxiv.org/abs/2405.00732) explique d'ailleurs comment faire tenir 25 versions de Mistral 7B fine-tunés avec LoRA sur un seul GPU A100.  
+- **L'adaptation** : Les poids du modèle pré-entraîné sont gelés pendant l'entraînement. Ce sont des poids supplémentaires (ceux de l'adapteur) qui vont être entraînés. Cela permet de garder l'entièreté du modèle pré-entraîné tel quel, et de rajouter uniquement la partie spécifique à chaque tâche. Entre autres, il est ainsi possible, avec un seul modèle de base, d'héberger plusieurs modèles spécialisés à moindre coût. Le papier [LoRA Land](https://arxiv.org/abs/2405.00732) explique d'ailleurs comment faire tenir 25 versions de Mistral 7B fine-tunés avec LoRA sur un seul GPU A100.  
 
 - **Le rang faible** : Les poids additionnels peuvent être choisis de beaucoup de manières. Avec LoRA, certaines couches du modèle (les couches d'attention ou les couches linéaires par exemple) sont sélectionnées, et les poids de ces couches sont exprimés comme une multiplication de deux matrices de rangs faibles, ce qui réduit grandement le nombre de poids à entraîner (la valeur de ce rang étant un hyperparamètre de l'entraînement). En fonction de la valeur de ce rang et des couches sélectionnées, il est ainsi possible d'entraîner uniquement 1 ou 2 % du nombre de paramètres global du modèle pré-entraîné, sans que cela n'affecte trop les performances du fine-tuning.
 
 D'autres approches de PEFT (Parameter-Efficient Fine-Tuning) ont vu le jour, dont la plupart s'inspirent de LoRA. Parmi les plus connues, QLoRA permet d'appliquer LoRA sur des modèles quantifiés, et DoRA propose un raffinement de l'adapteur de LoRA. 
 
-- Guide théorique très clair sur le PEFT (principe, avantages, etc.) avec un focus sur LoRA : https://www.leewayhertz.com/parameter-efficient-fine-tuning/
-- Guide pratique / Implémentation HugginFace : https://huggingface.co/blog/gemma-peft
+- [Guide théorique très clair sur le PEFT (principe, avantages, etc.) avec un focus sur LoRA](https://www.leewayhertz.com/parameter-efficient-fine-tuning/)
+- [Guide pratique / Implémentation HugginFace](https://huggingface.co/blog/gemma-peft)
 
 Liens des papiers originaux : 
-- LoRA : https://arxiv.org/abs/2106.09685 
-- QLoRA : https://arxiv.org/abs/2305.14314 
-- DoRA : https://arxiv.org/abs/2402.09353 
+- [LoRA](https://arxiv.org/abs/2106.09685)
+- [QLoRA](https://arxiv.org/abs/2305.14314) 
+- [DoRA](https://arxiv.org/abs/2402.09353) 
 
 ##### B. RLHF et RLAIF
 
 RLHF = Reinforcement Learning from Human Feedback | RLAIF = Reinforcement Learning from Artificial Intelligence Feedback
 
-Introduction au RLHF : https://huggingface.co/blog/rlhf
+- [Introduction au RLHF](https://huggingface.co/blog/rlhf)
 
 ###### a. PPO
 
 PPO = Proximal Policy Optimization
 
-- Explication théorique : https://huggingface.co/blog/deep-rl-ppo
-- Implémentation HuggingFace (module `trl`) : https://huggingface.co/docs/trl/main/en/ppo_trainer 
+- [Explication théorique](https://huggingface.co/blog/deep-rl-ppo)
+- [Implémentation HuggingFace](https://huggingface.co/docs/trl/main/en/ppo_trainer)
 
 https://medium.com/@oleglatypov/a-comprehensive-guide-to-proximal-policy-optimization-ppo-in-ai-82edab5db200 
 
@@ -90,14 +89,12 @@ https://medium.com/@oleglatypov/a-comprehensive-guide-to-proximal-policy-optimiz
 
 DPO = Direct Preference Optimization | KTO = Kahneman-Tversky Optimization
 
-- Explication théorique : https://huggingface.co/blog/pref-tuning
-- Guide pratique / Implémentation HugginFace : https://huggingface.co/blog/dpo-trl 
+- [Explication théorique](https://huggingface.co/blog/pref-tuning)
+- [Guide pratique / Implémentation HugginFace](https://huggingface.co/blog/dpo-trl) 
 
 Liens des papiers originaux : 
-- DPO : https://arxiv.org/abs/2305.18290 
-- KTO : https://arxiv.org/abs/2402.01306 
-
-
+- [DPO](https://arxiv.org/abs/2305.18290) 
+- [KTO](https://arxiv.org/abs/2402.01306) 
 
 ##### C. Fine-tuning d'embeddings
 
@@ -107,13 +104,13 @@ Liens des papiers originaux :
 
 ###### a. Prompt-tuning
 
-Lien du papier : https://arxiv.org/abs/2104.08691
+- [Lien du papier](https://arxiv.org/abs/2104.08691)
 
 ###### b. ReFT et LoReFT
 
 ReFT = Representation Fine-Tuning | LoReFT = Low-Rank Linear Subspace ReFT
 
-Lien du papier : https://arxiv.org/abs/2404.03592
+- [Lien du papier](https://arxiv.org/abs/2404.03592)
 
 #### 4. Prompt engineering
 
@@ -129,6 +126,12 @@ Il faut avant tout garder à l'esprit que le prompt engineering est une discipli
 
 ##### B. 0-shot, 1-shot, few-shot prompting
 
+La façon la plus intuitive d'adresser une requête à un LLM est de formuler des instructions les plus précises possibles. Ce faisant, on espère que le modèle comprendra ces instructions et répondra en conséquence. Pour des tâches nouvelles, auxquelles le modèle n'a pas nécessairement été confronté durant son (pré)-entraînement, on appelle cette méthode du 0-shot prompting : le modèle n'a pas de référence ou d'exemple de réponse attendue.
+
+Pour pallier ce manque de référence, il est possible (et, en fonction de la tâche, souvent recommandé) d'ajouter des exemples de paires entrée/sortie dans le prompt que l'on adresse au modèle : cela donne du 1-shot (un exemple) ou du few-shot (plusieurs exemples) prompting. Plus les exemples sont proches de la requête initiale, plus le modèle saura précisément comment répondre. Cela permet ainsi au modèle de s'adapter, à moindre coût, à une tâche très spécifique ou particulière.
+
+- [Guide pratique (avec exemples)](https://www.prompthub.us/blog/the-few-shot-prompting-guide)
+ 
 ##### C. Chain of Thought (CoT) reasoning
 
 Sur certaines tâches qui demandent un raisonnement (par exemple la résolution d'un problème mathématique simple), les LLM naturellement ne sont pas très bons. Pour augmenter leurs capacités de raisonnement, une stratégie classique consiste à leur demander de raisonner et de réfléchir étape par étape. 
@@ -137,7 +140,7 @@ Les modèles les plus récents ayant nettement progressé en raisonnement, il es
 
 Il est également possible de combiner le CoT reasoning avec du few-shot prompting, *i.e.* de donner des exemples de raisonnement étape par étape au modèle. 
 
-Guide détaillé : https://www.mercity.ai/blog-post/guide-to-chain-of-thought-prompting
+- [Guide détaillé](https://www.mercity.ai/blog-post/guide-to-chain-of-thought-prompting)
 
 ##### D. RAG
 
@@ -167,7 +170,7 @@ Beaucoup d’éléments sont à prendre en compte lors du choix du modèle à ut
 
 - **Son temps d’inférence** : Généralement directement lié à la taille du modèle, certaines architectures (MoE) permettent cependant d’avoir un temps d’inférence plus court.
 
-- **Ses performances générales** : Beaucoup de benchmarks publics évaluent les LLMs sur des tâches généralistes et variées. Un bon point de départ est de regarder le Leaderboard qui recense la plupart des modèles connus : https://chat.lmsys.org/?leaderboard.
+- **Ses performances générales** : Beaucoup de benchmarks publics évaluent les LLMs sur des tâches généralistes et variées. Un bon point de départ est de regarder [le Leaderboard](https://chat.lmsys.org/?leaderboard) qui recense la plupart des modèles connus. 
 
 - **Ses performances spécifiques** : Les benchmarks généralistes ne sont pas forcément pertinents pour certains cas d’usages, car ils ne sont pas spécifiques à la tâche, aux données, etc. Il peut être intéressant de développer un pipeline d’évaluation spécifique (cf…).
 
@@ -200,4 +203,4 @@ Si vous êtes dans l'un des cas suivants, le fine-tuning peut être une bonne op
 
 ##### F. Combiner plusieurs techniques
 
-RAG + fine-tuning = RAFT : https://arxiv.org/abs/2403.10131 
+RAG + fine-tuning = [RAFT](https://arxiv.org/abs/2403.10131)
