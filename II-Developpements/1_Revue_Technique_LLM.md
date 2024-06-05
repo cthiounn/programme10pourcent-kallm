@@ -14,9 +14,8 @@ https://www.entrypointai.com/blog/pre-training-vs-fine-tuning-vs-in-context-lear
 ##### A. L'architecture Transformer
 
 
-Papier original **'Attention Is All You Need'** : https://arxiv.org/abs/1706.03762
-
-Explication illustrée et très détaillée : http://jalammar.github.io/illustrated-transformer/ 
+- Papier original **'Attention Is All You Need'** : https://arxiv.org/abs/1706.03762
+- Explication illustrée et très détaillée : http://jalammar.github.io/illustrated-transformer/ 
 
 ##### B. Encoder-only, encoder-decoder, decoder-only
 
@@ -35,6 +34,10 @@ https://medium.com/artificial-corner/discovering-llm-structures-decoder-only-enc
 Explication détaillée des MoE (exemple de Mixtral) : https://huggingface.co/blog/moe 
 
 ##### D. Nouvelles architectures : Mamba, Jamba, etc.
+
+Le principal inconvénient architectural des Transformers est leur complexité quadratique par rapport à la taille de l'entrée (qui vient du calcul quadratique de l'attention). **Mamba** est une architecture récente (Décembre 2023) qui s'affranchit du mécanisme d'attention, au profit de briques SSM (Structured State Space Models). L'intérêt principal de cette architecture est sa complexité linéaire par rapport à la taille de l'entrée.
+
+**Jamba** est une nouvelle architecture hybride, à mi-chemin entre le Transformer et Mamba. Cela semble permettre un niveau de performance élevé, une gestion des contextes très longs, un temps d'inférence nettement plus court, et des exigences mémoires bien moindres.
 
 Liens des papiers originaux : 
 - Mamba : https://arxiv.org/abs/2312.00752 
@@ -60,22 +63,26 @@ Ré-entraîner entièrement un LLM est très coûteux en termes d'infrastructure
 
 D'autres approches de PEFT (Parameter-Efficient Fine-Tuning) ont vu le jour, dont la plupart s'inspirent de LoRA. Parmi les plus connues, QLoRA permet d'appliquer LoRA sur des modèles quantifiés, et DoRA propose un raffinement de l'adapteur de LoRA. 
 
-Liens intéressants : 
-- Un guide théorique très clair sur le PEFT (principe, avantages, etc.) avec un focus sur LoRA : https://www.leewayhertz.com/parameter-efficient-fine-tuning/
-- Un guide pratique pour utiliser LoRA avec HuggingFace : https://huggingface.co/blog/gemma-peft
-- Lien du papier LoRA : https://arxiv.org/abs/2106.09685 
-- Lien du papier QLoRA : https://arxiv.org/abs/2305.14314 
-- Lien du papier DoRA : https://arxiv.org/abs/2402.09353 
+- Guide théorique très clair sur le PEFT (principe, avantages, etc.) avec un focus sur LoRA : https://www.leewayhertz.com/parameter-efficient-fine-tuning/
+- Guide pratique / Implémentation HugginFace : https://huggingface.co/blog/gemma-peft
+
+Liens des papiers originaux : 
+- LoRA : https://arxiv.org/abs/2106.09685 
+- QLoRA : https://arxiv.org/abs/2305.14314 
+- DoRA : https://arxiv.org/abs/2402.09353 
 
 ##### B. RLHF et RLAIF
 
 RLHF = Reinforcement Learning from Human Feedback | RLAIF = Reinforcement Learning from Artificial Intelligence Feedback
 
+Introduction au RLHF : https://huggingface.co/blog/rlhf
+
 ###### a. PPO
 
 PPO = Proximal Policy Optimization
 
-https://huggingface.co/blog/deep-rl-ppo
+- Explication théorique : https://huggingface.co/blog/deep-rl-ppo
+- Implémentation HuggingFace (module `trl`) : https://huggingface.co/docs/trl/main/en/ppo_trainer 
 
 https://medium.com/@oleglatypov/a-comprehensive-guide-to-proximal-policy-optimization-ppo-in-ai-82edab5db200 
 
@@ -83,13 +90,14 @@ https://medium.com/@oleglatypov/a-comprehensive-guide-to-proximal-policy-optimiz
 
 DPO = Direct Preference Optimization | KTO = Kahneman-Tversky Optimization
 
+- Explication théorique : https://huggingface.co/blog/pref-tuning
+- Guide pratique / Implémentation HugginFace : https://huggingface.co/blog/dpo-trl 
+
 Liens des papiers originaux : 
 - DPO : https://arxiv.org/abs/2305.18290 
 - KTO : https://arxiv.org/abs/2402.01306 
 
-https://huggingface.co/blog/pref-tuning
 
-https://huggingface.co/blog/dpo-trl 
 
 ##### C. Fine-tuning d'embeddings
 
@@ -111,9 +119,25 @@ Lien du papier : https://arxiv.org/abs/2404.03592
 
 ##### A. Bonnes pratiques
 
+Il faut avant tout garder à l'esprit que le prompt engineering est une discipline très empirique, qui demande beaucoup d'itérations pour obtenir le meilleur prompt par rapport au résultat souhaité. Bien qu'il n'existe pas de méthode systématique et efficace pour optimiser un prompt, certaines pratiques sont devenues la norme. Par exemple, voici quelques bonnes pratiques : 
+- **Donner un rôle au modèle** : Par exemple, dire au modèle qu'il est un magistrat honnête et impartial pourra l'aider à générer du texte formel, neutre et juridique. Le rôle est bien sûr à adapter en fonction des exigences de chaque tâche.
+- **Structurer le prompt** : Il est important de bien différencier le *prompt système* du *prompt utilisateur*. Le premier donnera des instructions générales quant au style, à la tâche, au contexte, etc., alors que le second pourra donner des instructions spécifiques ou un texte à analyser. Il est également pertinent d'organiser ou de séparer clairement les instructions.
+- **Etre le plus précis possible** : 
+- **Contraindre le modèle au maximum** : 
+- **Donner des exemples** : Cf. paragraphe suivant.
+
+
 ##### B. 0-shot, 1-shot, few-shot prompting
 
 ##### C. Chain of Thought (CoT) reasoning
+
+Sur certaines tâches qui demandent un raisonnement (par exemple la résolution d'un problème mathématique simple), les LLM naturellement ne sont pas très bons. Pour augmenter leurs capacités de raisonnement, une stratégie classique consiste à leur demander de raisonner et de réfléchir étape par étape. 
+
+Les modèles les plus récents ayant nettement progressé en raisonnement, il est possible qu'ils raisonnent naturellement étape par étape sur des questions simples. Pour des questions ou des raisonnements plus complexes, il sera cependant probablement plus efficace de proposer une logique de raisonnement au modèle, en explicitant les différentes étapes. 
+
+Il est également possible de combiner le CoT reasoning avec du few-shot prompting, *i.e.* de donner des exemples de raisonnement étape par étape au modèle. 
+
+Guide détaillé : https://www.mercity.ai/blog-post/guide-to-chain-of-thought-prompting
 
 ##### D. RAG
 
@@ -121,7 +145,9 @@ RAG = Retrieval Augmented Generation
 
 Le principe est de rajouter du contexte dans le prompt du LLM, pour lui donner accès à des données spécifiques et pertinentes. Cf. partie sur la RAG.
 
-##### E. Exemples
+##### E. Reverse prompt engineering ?
+
+
 
 #### 5. Quoi faire quand ?
 
@@ -174,4 +200,4 @@ Si vous êtes dans l'un des cas suivants, le fine-tuning peut être une bonne op
 
 ##### F. Combiner plusieurs techniques
 
-RAG + fine-tuning = RAFT https://arxiv.org/abs/2403.10131 
+RAG + fine-tuning = RAFT : https://arxiv.org/abs/2403.10131 
