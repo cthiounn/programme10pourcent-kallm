@@ -1,0 +1,177 @@
+# Guide du LLM
+
+## PARTIE II. Développements autour des LLMs (pour les data scientists)
+
+### I. Revue technique de l’état de l’art LLM (Malo Jérôme)
+
+
+#### 1. Principe pré-entraînement / fine-tuning
+
+https://www.entrypointai.com/blog/pre-training-vs-fine-tuning-vs-in-context-learning-of-large-language-models/ 
+
+#### 2. Architectures principales LLM
+
+##### A. L'architecture Transformer
+
+
+Papier original **'Attention Is All You Need'** : https://arxiv.org/abs/1706.03762
+
+Explication illustrée et très détaillée : http://jalammar.github.io/illustrated-transformer/ 
+
+##### B. Encoder-only, encoder-decoder, decoder-only
+
+Les LLMs basés sur des architectures Transformers appartiennent à l’une des 3 catégories suivantes : 
+
+- **Modèle « encoder-only »** : Ils sont basés uniquement sur la partie décodeur des Transformers. Leur pré-entraînement est souvent basé sur la reconstruction de phrases : à chaque étape, le modèle a accès à une phrase entière, sauf certains mots qui ont été masqués, et apprend à retrouver ces mots masqués. Ces modèles sont adaptés pour des tâches de classification, de reconnaissance d’entités nommées (NER), de réponses aux questions, etc. Ils ont aujourd’hui perdu en popularité, mais leurs représentants les plus connus (BERT, RoBERTa, DistilBERT, CamemBERT, etc.) sont encore très utilisés, et restent un choix intéressant selon la tâche, grâce à leur compréhension fine du langage et à leur petite taille.
+
+- **Modèle « decoder-only »** : Ils sont basés uniquement sur la partie décodeur des Transformers. Ces modèles sont aujourd’hui la norme, et l’immense majorité des LLMs actuels utilisent cette architecture. Leur pré-entraînement est basé sur la prédiction du prochain token : à chaque étape, le modèle a accès au début d’une phrase, et apprend à prédire le token suivant. Pour cette raison, ces modèles sont également qualifiés d’« autorégressifs ». Les modèles GPT (2, 3, 4), Llama (2, 3), Mistral, Gemini, etc. sont tous des decoder-only.
+
+- **Modèle « encoder-decoder »** : Ils utilisent les deux blocs des Transformers. 
+
+https://medium.com/artificial-corner/discovering-llm-structures-decoder-only-encoder-only-or-decoder-encoder-5036b0e9e88 
+
+##### C. Mixture of Experts (MoE)
+
+Explication détaillée des MoE (exemple de Mixtral) : https://huggingface.co/blog/moe 
+
+##### D. Nouvelles architectures : Mamba, Jamba, etc.
+
+Liens des papiers originaux : 
+- Mamba : https://arxiv.org/abs/2312.00752 
+- Jamba : https://arxiv.org/abs/2403.19887 
+
+#### 3. Méthodes de fine-tuning
+
+##### A. Fine-tuning supervisé
+
+###### a. Fine-tuning complet
+
+Implémentation HuggingFace : https://huggingface.co/docs/transformers/training
+
+###### b. Fine-tuning efficace (PEFT) : LoRA, QLoRA, DoRA, etc.
+
+PEFT = Parameter-Efficient Fine-Tuning | LoRA = Low-Rank Adaptation | QLoRA = Quantized Low-Rank Adaptation | DoRA = Weight-Decomposed Low-Rank Adaptation
+
+Ré-entraîner entièrement un LLM est très coûteux en termes d'infrastructure et de données, et n'est donc pas à la portée de n'importe quelle organisation. Des méthodes « efficaces » ont été créées pour rendre le fine-tuning facilement accessible, dont la plus connue et la plus populaire est LoRA (pour Low-Rank Adaptation). Son fonctionnement repose sur deux éléments : 
+
+- **L'adaptation** : Les poids du modèle pré-entraîné sont gelés pendant l'entraînement. Ce sont des poids supplémentaires (ceux de l'adapteur) qui vont être entraînés. Cela permet de garder l'entièreté du modèle pré-entraîné tel quel, et de rajouter uniquement la partie spécifique à chaque tâche. Entre autres, il est ainsi possible, avec un seul modèle de base, d'héberger plusieurs modèles spécialisés à moindre coût. Le papier LoRA Land (https://arxiv.org/abs/2405.00732) explique d'ailleurs comment faire tenir 25 versions de Mistral 7B fine-tunés avec LoRA sur un seul GPU A100.  
+
+- **Le rang faible** : Les poids additionnels peuvent être choisis de beaucoup de manières. Avec LoRA, certaines couches du modèle (les couches d'attention ou les couches linéaires par exemple) sont sélectionnées, et les poids de ces couches sont exprimés comme une multiplication de deux matrices de rangs faibles, ce qui réduit grandement le nombre de poids à entraîner (la valeur de ce rang étant un hyperparamètre de l'entraînement). En fonction de la valeur de ce rang et des couches sélectionnées, il est ainsi possible d'entraîner uniquement 1 ou 2 % du nombre de paramètres global du modèle pré-entraîné, sans que cela n'affecte trop les performances du fine-tuning.
+
+D'autres approches de PEFT (Parameter-Efficient Fine-Tuning) ont vu le jour, dont la plupart s'inspirent de LoRA. Parmi les plus connues, QLoRA permet d'appliquer LoRA sur des modèles quantifiés, et DoRA propose un raffinement de l'adapteur de LoRA. 
+
+Liens intéressants : 
+- Un guide théorique très clair sur le PEFT (principe, avantages, etc.) avec un focus sur LoRA : https://www.leewayhertz.com/parameter-efficient-fine-tuning/
+- Un guide pratique pour utiliser LoRA avec HuggingFace : https://huggingface.co/blog/gemma-peft
+- Lien du papier LoRA : https://arxiv.org/abs/2106.09685 
+- Lien du papier QLoRA : https://arxiv.org/abs/2305.14314 
+- Lien du papier DoRA : https://arxiv.org/abs/2402.09353 
+
+##### B. RLHF et RLAIF
+
+RLHF = Reinforcement Learning from Human Feedback | RLAIF = Reinforcement Learning from Artificial Intelligence Feedback
+
+###### a. PPO
+
+PPO = Proximal Policy Optimization
+
+https://huggingface.co/blog/deep-rl-ppo
+
+https://medium.com/@oleglatypov/a-comprehensive-guide-to-proximal-policy-optimization-ppo-in-ai-82edab5db200 
+
+###### b. DPO, KTO
+
+DPO = Direct Preference Optimization | KTO = Kahneman-Tversky Optimization
+
+Liens des papiers originaux : 
+- DPO : https://arxiv.org/abs/2305.18290 
+- KTO : https://arxiv.org/abs/2402.01306 
+
+https://huggingface.co/blog/pref-tuning
+
+https://huggingface.co/blog/dpo-trl 
+
+##### C. Fine-tuning d'embeddings
+
+*Plutôt dans la partie RAG ?*
+
+##### D. Divers
+
+###### a. Prompt-tuning
+
+Lien du papier : https://arxiv.org/abs/2104.08691
+
+###### b. ReFT et LoReFT
+
+ReFT = Representation Fine-Tuning | LoReFT = Low-Rank Linear Subspace ReFT
+
+Lien du papier : https://arxiv.org/abs/2404.03592
+
+#### 4. Prompt engineering
+
+##### A. Bonnes pratiques
+
+##### B. 0-shot, 1-shot, few-shot prompting
+
+##### C. Chain of Thought (CoT) reasoning
+
+##### D. RAG
+
+RAG = Retrieval Augmented Generation
+
+Le principe est de rajouter du contexte dans le prompt du LLM, pour lui donner accès à des données spécifiques et pertinentes. Cf. partie sur la RAG.
+
+##### E. Exemples
+
+#### 5. Quoi faire quand ?
+
+##### A. Utiliser un LLM
+
+La première question à se poser est la nécessité ou non d’utiliser un LLM. Certaines tâches peuvent se résoudre avec un LLM, mais ce n’est pas toujours la solution la plus pertinente. Par exemple, un LLM est normalement capable de parser un fichier xml sans problème, mais un script naïf sera largement aussi efficace, à bien moindre coût (environnemental, humain, financier). L’utilisation d’un LLM doit venir d’un besoin de compréhension fine du langage naturel. 
+
+**Donner quelques exemples de cas d'usages**
+
+##### B. Quel(s) modèle(s) utiliser
+
+Beaucoup d’éléments sont à prendre en compte lors du choix du modèle à utiliser. Parmi les plus importants : 
+
+- **Sa taille** : Exprimée généralement en milliards (B) de paramètres (Llama-3 8B possède 8 milliards de paramètres, Mistral 7B en possède 7 milliards, etc.), elle influe fortement sur les performances du modèles et les exigences techniques. Un « petit » LLM de 8 milliards de paramètres pourra tourner sur un GPU modeste avec une VRAM de 32 GB (voire moins si l’on utilise un modèle quantifié, cf. …), tandis qu’un LLM de taille moyenne de 70 milliards de paramètres nécessitera 2 GPU puissants avec 80 GB de VRAM.
+
+- **Son multilinguisme** : La plupart des modèles sont entraînés sur une immense majorité de données anglaises (plus de 90 % pour Llama-2, contre moins de 0,1 % de données françaises). Les modèles incluant plus de français (Mistral ?) dans leurs données d’entraînement sont naturellement plus efficaces sur du français. 
+
+- **Son temps d’inférence** : Généralement directement lié à la taille du modèle, certaines architectures (MoE) permettent cependant d’avoir un temps d’inférence plus court.
+
+- **Ses performances générales** : Beaucoup de benchmarks publics évaluent les LLMs sur des tâches généralistes et variées. Un bon point de départ est de regarder le Leaderboard qui recense la plupart des modèles connus : https://chat.lmsys.org/?leaderboard.
+
+- **Ses performances spécifiques** : Les benchmarks généralistes ne sont pas forcément pertinents pour certains cas d’usages, car ils ne sont pas spécifiques à la tâche, aux données, etc. Il peut être intéressant de développer un pipeline d’évaluation spécifique (cf…).
+
+##### C. Quand faire du prompt engineering
+
+Si vous êtes dans l'un des cas suivants, le prompt engineering peut être une bonne option : 
+
+- Pas beaucoup de ressources disponibles
+- Besoin d'un outil laissé à la disposition des utilisateurs, avec une grande liberté
+- Les réponses requises sont très formattées ou très spécifiques
+
+##### D. Quand faire de la RAG
+
+Si vous êtes dans l'un des cas suivants, la RAG peut être une bonne option : 
+
+- Besoin de réponses à jour, régulièrement et facilement actualisées
+- Besoin de sourcer les réponses ou de diminuer les hallucinations
+- Besoin d'enrichir les réponses avec des données spécifiques 
+- Besoin d'une application qui ne dépend pas d'un modèle spécifique (généralisabilité), et dont les utilisateurs ne connaissent pas l'IA générative
+
+##### E. Quand faire du fine-tuning
+
+Si vous êtes dans l'un des cas suivants, le fine-tuning peut être une bonne option : 
+
+- Besoin d'une terminologie ou d'un style spécifique 
+- Besoin d'enrichir les réponses avec des données spécifiques
+- Ressources (GPU, data scientists) disponibles 
+- Données disponibles en quantité et qualité suffisantes
+- Besoin d'une application qui ne dépend pas d'un modèle spécifique (généralisabilité), et dont les utilisateurs ne connaissent pas l'IA générative
+
+##### F. Combiner plusieurs techniques
+
+RAG + fine-tuning = RAFT https://arxiv.org/abs/2403.10131 
