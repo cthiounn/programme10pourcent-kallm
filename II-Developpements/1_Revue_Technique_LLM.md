@@ -7,11 +7,43 @@
 
 #### 1. Principe pré-entraînement / fine-tuning
 
-https://www.entrypointai.com/blog/pre-training-vs-fine-tuning-vs-in-context-learning-of-large-language-models/ 
+Les LLMs reposent sur un développement en deux voire trois étapes. 
+- **Le pré-entraînement** consiste à entraîner le modèle, en partant de zéro, de façon auto-supervisée, et sur un corpus d'entraînement gigantesque. L'objectif de ce pré-entraînement dépend du type de modèle utilisé (cf. paragraphe suivant), mais la plupart apprennent à prédire le token suivant, à partir d'une suite de tokens. C'est ce qui les rend particulièrement efficaces pour de la génération de texte.
+
+- **L'instruction-tuning** permet d'adapter le modèle pré-entraîné à une plus grande diversité de tâches. Dans de nombreux cas (chatbot, résumé de texte, etc.), la prédiction du token suivant n'est pas la bonne stratégie. L'étape d'instruction-tuning permet ainsi, grâce à un entraînement supervisé, de créer une version « chat » du modèle. Pour donner un exemple connu de tous, ChatGPT est la version instruction-tunée de GPT-4. 
+
+- **Le fine-tuning** (optionnel) peut être utilisé pour adapter le modèle à une tâche et à des données spécifiques. Les LLMs étant des outils multitâches, souvent multilingues et multidomaines, leurs performances peuvent être dégradées lorsqu'il y a des exigences précises et spécifiques. Le fine-tuning est une nouvelle phase d'entraînement supervisé, nécessitant moins de données et de puissance de calcul, qui permet de spécialiser le modèle.
+
+
+Par leur taille et les exigences techniques qu'ils impliquent, seules quelques entreprises spécialisées ont les moyens de pré-entraîner et d'instruction-tuner des LLMs. Le fine-tuning, en revanche, peut être abordable pour beaucoup plus d'acteurs, pour peu qu'ils répondent à certaines exigences techniques (cf. partie sur le fine-tuning). 
+
+Pour donner des ordres de grandeur, la petite version du dernier modèle de Meta, Llama-3 8B, a été pré-entraîné et instruction-tuné sur un corpus de 15 trillions de tokens. Ces deux phases d'entraînement ont nécessité 1,3 millions d'heures GPU, réparties sur plusieurs milliers de GPU H100.
+
+- [Article résumant la dualité pré-entraînement/fine-tuning](https://www.entrypointai.com/blog/pre-training-vs-fine-tuning-vs-in-context-learning-of-large-language-models/)
 
 #### 2. Architectures principales LLM
 
 ##### A. L'architecture Transformer
+
+Introduite en 2017 dans le papier **Attention Is All You Need**, l’architecture Transformer a révolutionné le domaine du TAL. Par rapport aux RNN, les Transformers permettent un traitement efficace des séquences en parallèle, conduisant à un temps de calcul beaucoup plus court (tant lors de l’entraînement qu’en inférence), tandis que les RNN, par construction, ne peuvent traiter une séquence que séquentiellement, c’est-à-dire token par token. En outre, le mécanisme d’auto-attention, présenté ci-dessous, permet de capturer efficacement les dépendances distantes en atténuant le problème de la disparition et de l’explosion des gradients.
+
+[<img src="transformer_architecture.png" width="250"/>](Architecture Transformer)
+
+L’auto-attention est le mécanisme central des Transformers. Elle est utilisée pour pondérer, lors de l’examen d’un token en particulier, l’importance, relative à ce token, de chaque autre token de la séquence. Concrètement, trois vecteurs (qui représentent chacun la séquence d’entrée dans un rôle différent) sont déduits de la séquence d’entrée $X$ : les requêtes ($Q$), les clés ($K$) et les valeurs ($V$), par des transformations linéaires comme exprimées dans l’équation suivantes. Les matrices $W_Q$, $W_K$ et $W_V$ sont des paramètres entraînables du modèle.
+$$Q = X \cdot W_Q \qquad K = X \cdot W_K \qquad V = X \cdot W_V $$
+
+Les scores d’attention sont ensuite calculés selon l’équation suivante.
+$$\text{Attention}(Q, K, V) = \text{softmax} \left( \frac{QK^{T}}{\sqrt{d}} \right) V$$
+
+Pour chaque token d’entrée $X_i$, le résultat $\text{Attention}(Q, K, V)_i$ est une combinaison de tous les autres éléments de la séquence, pondérés selon leur pertinence par rapport à $X_i$.
+
+L’auto-attention telle que présentée ci-dessus n’est cependant pas directement utilisée dans l’architecture Transformer. A la place, une extension, appelée attention multi-têtes, permet au modèle de capturer plusieurs aspects des relations et des dépendances entre les éléments de la séquence d’entrée. Cela est fait en transformant la séquence d’entrée en plusieurs têtes, i.e. en plusieurs vecteurs de requêtes, de clés et de valeurs, et en appliquant un mécanisme d’auto-attention sur chacune de ces têtes. Les vecteurs d’attention de chaque tête sont ensuite concaténés et réduits linéairement à la taille d’entrée d’origine. Le calcul de l’attention multi-têtes est détaillé dans l’équation suivante.
+
+$$\text{MultiHeadAttention}(Q, K, V) = \text{Concat}(\text{head}_1 , \cdots, \text{head}_h)W^O$$
+
+où $\text{head}_i = \text{Attention}(X \cdot W_Q^i, X \cdot W_K^i, X \cdot W_V^i)$ pour $i = 1, \cdot, h$ avec $h$ le nombre de têtes d’attention. Chaque tête d’attention peut donc se spécialiser dans un aspect spécifique des données, et le modèle peut apprendre à combiner ces différents aspects pour une meilleure représentation. La combinaison de ce mécanisme d’attention multi-têtes, de couches de normalisation et de couches à action directes (FNN) forme un bloc Transformer. 
+
+Plusieurs blocs (6 dans l’implémentation originale) forment ensuite l’encodeur (qui a accès à la séquence d’entrée dans son intégralité) et le décodeur (qui a accès à la représention encodée de la séquence d’entrée, et à la séquence de sortie générée jusqu’alors). La combinaison de ces deux éléments composent le Transformer encodeur-décodeur original.
 
 - [Papier original **'Attention Is All You Need'**](https://arxiv.org/abs/1706.03762)
 - [Explication illustrée et très détaillée](http://jalammar.github.io/illustrated-transformer/)
@@ -24,11 +56,15 @@ Les LLMs basés sur des architectures Transformers appartiennent à l’une des 
 
 - **Modèle « decoder-only »** : Ils sont basés uniquement sur la partie décodeur des Transformers. Ces modèles sont aujourd’hui la norme, et l’immense majorité des LLMs actuels utilisent cette architecture. Leur pré-entraînement est basé sur la prédiction du prochain token : à chaque étape, le modèle a accès au début d’une phrase, et apprend à prédire le token suivant. Pour cette raison, ces modèles sont également qualifiés d’« autorégressifs ». Les modèles GPT (2, 3, 4), Llama (2, 3), Mistral, Gemini, etc. sont tous des decoder-only.
 
-- **Modèle « encoder-decoder »** : Ils utilisent les deux blocs des Transformers. 
+- **Modèle « encoder-decoder »** : Ils utilisent les deux blocs des Transformers. L'encodeur a ainsi accès à l'intégralité de la séquence d'entrée, alors que le décodeur a accès à la représentation cachée de l'entrée et aux tokens générés jusqu'alors. Les modèles les plus connus sont par exemple BART et T5.
 
 https://medium.com/artificial-corner/discovering-llm-structures-decoder-only-encoder-only-or-decoder-encoder-5036b0e9e88 
 
 ##### C. Mixture of Experts (MoE)
+
+Les architectures Mixture of Experts ne sont pas spécifiques aux LLMs, mais elles ont été adaptées avec succès sur des modèles comme Mixtral 8x7B, Mixtral 8x22B ou GPT-4 (supposition). Le principe est de remplacer chaque réseau à propagation directe (présent dans chaque bloc de l'architecture Transformer) par un ensemble de réseaux « experts ». Au moment de passer dans cette partie du réseau, un routeur envoie vers un de ces experts uniquement. L'intérêt est double : un seul expert étant utilisé à la fois, le temps d'inférence est naturellement nettement plus court. Par ailleurs, chaque réseau expert est entraîné et donc spécialisé différement des autres : pour un même nombre de paramètres, les performances sont donc supposées être meilleures qu'avec une architecture classique. En revanche, si tous les poids du modèles ne sont pas utilisés systématiquement, c'est uniquement à l'inférence et à chaque couche du réseau que l'expert est choisi : il est donc tout de même nécessaire de charger l'intégralité des poids du modèle en mémoire, ce qui peut être très coûteux en VRAM. Pour une explication plus technique, l'article suivant détaille très bien les MoE en prenant l'exemple de Mixtral.
+
+[<img src="moe_layer.png" width="500"/>](Une couche d'un réseau MoE)
 
 Explication détaillée des MoE (exemple de Mixtral) : https://huggingface.co/blog/moe 
 
@@ -54,11 +90,13 @@ Liens des papiers originaux :
 
 PEFT = Parameter-Efficient Fine-Tuning | LoRA = Low-Rank Adaptation | QLoRA = Quantized Low-Rank Adaptation | DoRA = Weight-Decomposed Low-Rank Adaptation
 
-Ré-entraîner entièrement un LLM est très coûteux en termes d'infrastructure et de données, et n'est donc pas à la portée de n'importe quelle organisation. Des méthodes « efficaces » ont été créées pour rendre le fine-tuning facilement accessible, dont la plus connue et la plus populaire est LoRA (pour Low-Rank Adaptation). Son fonctionnement repose sur deux éléments : 
+Ré-entraîner entièrement un LLM est très coûteux en termes d'infrastructure et de données, et n'est donc pas à la portée de n'importe quelle organisation. Des méthodes « efficaces » ont été créées pour rendre le fine-tuning facilement accessible, dont la plus connue et la plus populaire est LoRA (Low-Rank Adaptation). Son fonctionnement repose sur deux éléments : 
 
 - **L'adaptation** : Les poids du modèle pré-entraîné sont gelés pendant l'entraînement. Ce sont des poids supplémentaires (ceux de l'adapteur) qui vont être entraînés. Cela permet de garder l'entièreté du modèle pré-entraîné tel quel, et de rajouter uniquement la partie spécifique à chaque tâche. Entre autres, il est ainsi possible, avec un seul modèle de base, d'héberger plusieurs modèles spécialisés à moindre coût. Le papier [LoRA Land](https://arxiv.org/abs/2405.00732) explique d'ailleurs comment faire tenir 25 versions de Mistral 7B fine-tunés avec LoRA sur un seul GPU A100.  
 
 - **Le rang faible** : Les poids additionnels peuvent être choisis de beaucoup de manières. Avec LoRA, certaines couches du modèle (les couches d'attention ou les couches linéaires par exemple) sont sélectionnées, et les poids de ces couches sont exprimés comme une multiplication de deux matrices de rangs faibles, ce qui réduit grandement le nombre de poids à entraîner (la valeur de ce rang étant un hyperparamètre de l'entraînement). En fonction de la valeur de ce rang et des couches sélectionnées, il est ainsi possible d'entraîner uniquement 1 ou 2 % du nombre de paramètres global du modèle pré-entraîné, sans que cela n'affecte trop les performances du fine-tuning.
+
+[<img src="regular_vs_lora_finetuning.png" width="500"/>](Fine-tuning complet VS Fine-Tuning LoRA)
 
 D'autres approches de PEFT (Parameter-Efficient Fine-Tuning) ont vu le jour, dont la plupart s'inspirent de LoRA. Parmi les plus connues, QLoRA permet d'appliquer LoRA sur des modèles quantifiés, et DoRA propose un raffinement de l'adapteur de LoRA. 
 
@@ -71,6 +109,10 @@ Liens des papiers originaux :
 - [DoRA](https://arxiv.org/abs/2402.09353) 
 
 ##### B. RLHF et RLAIF
+
+Le fine-tuning supervisé est très efficace dans de nombreux cas, mais il présente notamment l'inconvénient de nécessiter une quantité importante de données. La constitution d'une base de questions-réponses attendues par exemple peut se réveler coûteuse. Un autre moyen d'améliorer un modèle est d'utiliser de l'apprentissage par renforcement. La première version utilisée pour ré-entraîner un LLM est le RLHF (Reinforcement Learning from Human Feedback), qui consiste à récolter des retours d'utilisateurs humains (typiquement, entre deux réponses générées par un LLM, l'utilisateur va dire laquelle il préfère), puis à mettre à jour les poids du modèle, par un algorithme d'apprentissage par renforcement, de telle sorte que la réponse préférée par l'utilisateur ait plus de chances d'être générée. Cette approche s'est révélée particulièrement effiace pour « aligner » le modèle aux préférences humaines, en termes de biais, de toxicité, de style, etc. 
+
+Bien que la constitution d'une base de retours humains soit moins coûteuse que celle d'une base de questions/réponses, elle reste coûteuse. Une solution aujourd'hui très populaire est de remplacer ces retours humains par des retours générés artificiellement, ce qui donne une approche appelée RLAIF (Reinforcement Learning from Artificial Intelligence Feedback). Typiquement, un LLM plus performant (par exemple GPT-4) va être utilisé pour déterminer la meilleure réponse entre deux ou plusieurs choix, selon des critères donnés. Ce sont ensuite ces retours qui vont être utilisés pour améliorer le modèle grâce à l'algorithme d'apprentissage par renforcement.
 
 RLHF = Reinforcement Learning from Human Feedback | RLAIF = Reinforcement Learning from Artificial Intelligence Feedback
 
@@ -87,6 +129,8 @@ https://medium.com/@oleglatypov/a-comprehensive-guide-to-proximal-policy-optimiz
 
 ###### b. DPO, KTO
 
+
+
 DPO = Direct Preference Optimization | KTO = Kahneman-Tversky Optimization
 
 - [Explication théorique](https://huggingface.co/blog/pref-tuning)
@@ -98,7 +142,8 @@ Liens des papiers originaux :
 
 ##### C. Fine-tuning d'embeddings
 
-*Plutôt dans la partie RAG ?*
+Cf. partie sur la RAG.
+
 
 ##### D. Divers
 
@@ -107,6 +152,8 @@ Liens des papiers originaux :
 - [Lien du papier](https://arxiv.org/abs/2104.08691)
 
 ###### b. ReFT et LoReFT
+
+
 
 ReFT = Representation Fine-Tuning | LoReFT = Low-Rank Linear Subspace ReFT
 
@@ -122,6 +169,14 @@ Il faut avant tout garder à l'esprit que le prompt engineering est une discipli
 - **Etre le plus précis possible** : 
 - **Contraindre le modèle au maximum** : 
 - **Donner des exemples** : Cf. paragraphe suivant.
+
+Le papier [Principled Instructions Are All You Need for Questioning LLaMA-1/2, GPT-3.5/4](https://arxiv.org/abs/2312.16171) donne un certains nombre de principes pour améliorer les prompts. Parmi ces principes (très nombreux), on trouve par exemple : 
+- Ne pas etre poli avec le LLM si l'on souhaite une réponse concise.
+- Décrire l'audience souhaitée dans le prompt (des experts techniques, des enfants, etc.).
+- Utiliser des directives affirmatives (fais ceci), et éviter les tournures négatives (ne fais pas cela).
+- Employer des phrases telles que 'Ta tache est de' ou 'Tu DOIS'.
+- Répéter plusieurs fois certains mots ou phrases essentielles.
+
 
 
 ##### B. 0-shot, 1-shot, few-shot prompting
@@ -148,9 +203,11 @@ RAG = Retrieval Augmented Generation
 
 Le principe est de rajouter du contexte dans le prompt du LLM, pour lui donner accès à des données spécifiques et pertinentes. Cf. partie sur la RAG.
 
-##### E. Reverse prompt engineering ?
+##### E. Reverse prompt engineering
 
+Une façon de travailler ses prompts est de profiter des capacités génératives des LLMs pour leur faire créer des prompts. L'idée est de donner au LLM un exemple de sortie souhaitée, et de lui demander de générer le prompt le plus adapté possible pour produire cette sortie.
 
+- [Guide pratique](https://bootcamp.uxdesign.cc/why-reverse-prompt-engineering-is-the-magic-key-to-production-ready-prompts-9d4c2c5b2e8b)
 
 #### 5. Quoi faire quand ?
 
@@ -173,6 +230,8 @@ Beaucoup d’éléments sont à prendre en compte lors du choix du modèle à ut
 - **Ses performances générales** : Beaucoup de benchmarks publics évaluent les LLMs sur des tâches généralistes et variées. Un bon point de départ est de regarder [le Leaderboard](https://chat.lmsys.org/?leaderboard) qui recense la plupart des modèles connus. 
 
 - **Ses performances spécifiques** : Les benchmarks généralistes ne sont pas forcément pertinents pour certains cas d’usages, car ils ne sont pas spécifiques à la tâche, aux données, etc. Il peut être intéressant de développer un pipeline d’évaluation spécifique (cf…).
+
+En juin 2024, un bon point de départ est de regarder les modèles open-source de Meta (Llama-2 7B/13B/70B, Llama-3 8B/70B) et de Mistral AI (Mistral 7B, Mixtral 8x7B).
 
 ##### C. Quand faire du prompt engineering
 
