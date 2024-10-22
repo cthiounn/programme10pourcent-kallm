@@ -1,5 +1,8 @@
 ---
 title: Classification des thématiques des accords d'entreprise
+format:
+  html:
+    number-sections: true   # Enables section numbering
 ---
 
 ## Les accords d'entreprise
